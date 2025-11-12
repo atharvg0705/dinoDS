@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Time‑Machine Map • Jurassic Impact</title>
+
+  <!-- Fonts + Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="{{ url_for('maps.static', filename='map.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <!-- Enhanced Header with Jurassic Logo -->
+    <header class="header glass-header">
+      <div class="logo-section" onclick="window.location.href='/'" title="Back to Impact Predictor">
+        <div class="jp-logo">
+          <img src="/jurassic-logo.png" alt="Jurassic Park" class="logo-image" onerror="showFallbackLogo(this)" />
+        </div>
+        <div class="title-wrap">
+          <h1 class="arcade-title">TIME‑MACHINE MAP</h1>
+          <div class="subtitle">Explore 165 million years of prehistoric life!</div>
+        </div>
+      </div>
+      <div class="stats-display">
+        <div class="stat-item">
+          <span class="stat-label">DISCOVERIES</span>
+          <span class="stat-value" id="total-fossils">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">ACTIVE FILTERS</span>
+          <span class="stat-value" id="active-filters">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Enhanced Main Panel -->
+    <div class="panel glass-panel">
+      <div class="panel-header bar">
+        <div class="panel-title">
+          <i class="fas fa-globe-americas"></i>
+          FOSSIL DISTRIBUTION EXPLORER
+        </div>
+        <div class="panel-actions">
+          <select id="taxon-select" class="chip">
+            <option value="">All Groups</option>
+            <option value="theropoda">🦖 Theropoda</option>
+            <option value="sauropoda">🦕 Sauropoda</option>
+            <option value="ceratopsia">🦏 Ceratopsia</option>
+            <option value="hadrosauridae">🦆 Hadrosauridae</option>
+            <option value="stegosauria">🛡️ Stegosauria</option>
+            <option value="ankylosauria">⚔️ Ankylosauria</option>
+          </select>
+          <input id="taxon-search" class="chip" type="text" placeholder="Search species..." />
+          <button id="heat-toggle" class="chip">
+            <i class="fas fa-fire"></i> Heatmap
+          </button>
+          <button id="time-toggle" class="chip">
+            <i class="fas fa-clock"></i> Timeline
+          </button>
+        </div>
+      </div>
+
+      <!-- Map Container -->
+      <div class="map-shell">
+        <div id="map"></div>
+        
+        <!-- Fossil Details Panel -->
+        <div id="fossil-details" class="fossil-details glass-subtle">
+          <button id="details-close" class="details-close">×</button>
+          <div class="details-content">
+            <h3 id="details-name">Select a fossil site</h3>
+            <div id="details-info">
+              <p>Click on a country or fossil marker to view detailed information about discoveries in that region.</p>
+            </div>
+            <div id="impact-preview" class="impact-preview" style="display: none;">
+              <h4><i class="fas fa-chart-line"></i> Impact Analysis</h4>
+              <div class="impact-score">
+                <span class="score-label">Predicted Impact:</span>
+                <span class="score-value" id="preview-score">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced Control Bar -->
+      <div class="control-bar glass-subtle">
+        <div class="control-left">
+          <i class="fas fa-layer-group control-icon"></i>
+          <div class="control-text">
+            <span class="control-title">Fossil Explorer</span>
+            <small class="control-hint">Discover prehistoric life across continents</small>
+          </div>
+        </div>
+        <div class="control-right">
+          <div class="era-selector">
+            <label for="era-filter">
+              <i class="fas fa-history"></i>
+              <span>Geological Era:</span>
+            </label>
+            <select id="era-filter" class="era-chip">
+              <option value="">All Periods</option>
+              <option value="triassic">Triassic (252-201 MYA)</option>
+              <option value="jurassic">Jurassic (201-145 MYA)</option>
+              <option value="cretaceous">Cretaceous (145-66 MYA)</option>
+            </select>
+          </div>
+          <div class="legend-toggle">
+            <button id="legend-btn" class="chip secondary">
+              <i class="fas fa-list"></i> Legend
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Panel -->
+    <div id="timeline-panel" class="timeline-panel glass-panel" style="display: none;">
+      <div class="timeline-header">
+        <h3><i class="fas fa-timeline"></i> Geological Timeline</h3>
+        <button id="timeline-close" class="timeline-close">×</button>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-slider">
+          <input type="range" id="time-slider" min="66" max="252" value="159" step="1">
+          <div class="time-labels">
+            <span>66 MYA</span>
+            <span>159 MYA</span>
+            <span>252 MYA</span>
+          </div>
+        </div>
+        <div class="current-period">
+          <span id="current-period-name">Mid Jurassic</span>
+          <small id="current-period-desc">Peak of dinosaur diversity</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend Panel -->
+    <div id="legend-panel" class="legend-panel glass-subtle" style="display: none;">
+      <h4><i class="fas fa-palette"></i> Fossil Density Legend</h4>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #FFEDA0;"></div>
+          <span>1-5 discoveries</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #FD8D3C;"></div>
+          <span>6-10 discoveries</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #FC4E2A;"></div>
+          <span>11-20 discoveries</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #E31A1C;"></div>
+          <span>21-50 discoveries</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #BD0026;"></div>
+          <span>51-100 discoveries</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #800026;"></div>
+          <span>100+ discoveries</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hover Sidebar -->
+  <div class="sidebar-zone">
+    <div class="sidebar-trigger">
+      <i class="fas fa-chevron-right"></i>
+    </div>
+    <div class="sidebar">
+      <h3><i class="fas fa-compass"></i> NAVIGATION</h3>
+      
+      <a href="/h2h" class="nav-button">
+        <i class="fas fa-balance-scale"></i>
+        <span>HEAD-TO-HEAD BATTLE</span>
+      </a>
+
+      <a href="/" class="nav-button">
+        <i class="fas fa-home"></i>
+        <span>IMPACT PREDICTOR</span>
+      </a>
+
+      <a href="/about" class="nav-button">
+        <i class="fas fa-info-circle"></i>
+        <span>ABOUT ANALYSIS</span>
+      </a>
+
+      <!-- Quick Actions in Sidebar -->
+      <div class="sidebar-section">
+        <h4><i class="fas fa-bolt"></i> Quick Actions</h4>
+        <button id="reset-map" class="sidebar-action">
+          <i class="fas fa-refresh"></i> Reset View
+        </button>
+        <button id="random-fossil" class="sidebar-action">
+          <i class="fas fa-dice"></i> Random Discovery
+        </button>
+        <button id="export-data" class="sidebar-action">
+          <i class="fas fa-download"></i> Export Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Flash Card -->
+  <aside id="flash-card" class="glass-subtle flash-card" aria-live="polite" aria-atomic="true" style="display: none;">
+    <button id="flash-close" class="flash-close" aria-label="Close">&times;</button>
+    <div id="flash-body" class="flash-body">
+      <div class="flash-icon">🔍</div>
+      <div class="meta">Initializing fossil database...</div>
+    </div>
+  </aside>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <h3>Excavating Fossil Data...</h3>
+      <p>Analyzing prehistoric discoveries across the globe</p>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+  <!-- App JS -->
+  <script src="{{ url_for('maps.static', filename='map.js') }}"></script>
+
+  <!-- Logo fallback function -->
+  <script>
+    function showFallbackLogo(img) {
+      img.style.display = 'none';
+      img.parentNode.innerHTML = '<div class="amber-logo" onclick="window.location.href=\'/\'">🦕</div>';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" },
+    { "src": "maps/static/**",         "use": "@vercel/static" },
+    { "src": "maps/template/**",       "use": "@vercel/static" }
+  ],
+ "routes": [
+  { "src": "/maps/api/(.*)", "dest": "/api/index.py?__path=$1" },
+  { "src": "/maps/static/(.*)", "dest": "/maps/static/$1" },
+  { "src": "/maps/(.*\\.html)", "dest": "/maps/template/$1" },
+  { "src": "/(.*)", "dest": "/api/index.py" }
+]
+}
+
