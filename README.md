@@ -9,3 +9,5 @@ Key functionalities include:
 🌐 User-friendly web interface powered by Flask and Jinja2 templates
 
 This project is intended for data science practice, web development experience, and Valorant esports research. It makes use of open-source Python tools and is ideal for learners and fans seeking in-depth analysis of Valorant gameplay.
+
+<img width="1366" height="636" alt="Screenshot (172)" src="https://github.com/user-attachments/assets/ced3e517-052a-4659-b5ee-454cba4eec70" />
